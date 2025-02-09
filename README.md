@@ -23,8 +23,8 @@ The project is organized into the following parts:
   The `FactorAnalysis` class performs rolling regressions, rolling correlations, and principal component analysis (PCA) on the portfolio and factor returns to understand the impact of various factors.
 
   ```python
-  class Data:
-     def __init__(self, portfolio_returns, factor_returns):
+  class FactorAnalysis:
+      def __init__(self, portfolio_returns, factor_returns):
           self._validate_initial_inputs(portfolio_returns, factor_returns)
           self.portfolio, self.factors = self._align_and_preprocess(portfolio_returns, factor_returns)
           self._post_alignment_validation()
