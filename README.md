@@ -10,24 +10,24 @@ The project is organized into the following parts:
   The `Data` class downloads historical data, processes it (combining, cleaning, and computing returns), and stores it in a SQLite database.
 
   ```python
-class Data:
-    def __init__(self, indices, start_date, end_date, interval, db_name):
-        self.fetch_data(indices, start_date, end_date, interval)
-        self.combine_data()
-        self.setup_database(db_name)
-        self.populate_database()
-        self.fetch_and_process_data()
+  class Data:
+      def __init__(self, indices, start_date, end_date, interval, db_name):
+          self.fetch_data(indices, start_date, end_date, interval)
+          self.combine_data()
+          self.setup_database(db_name)
+          self.populate_database()
+          self.fetch_and_process_data()
     # ...
 
 - **Factor Analysis:**  
   The `FactorAnalysis` class performs rolling regressions, rolling correlations, and principal component analysis (PCA) on the portfolio and factor returns to understand the impact of various factors.
 
   ```python
-class Data:
-   def __init__(self, portfolio_returns, factor_returns):
-        self._validate_initial_inputs(portfolio_returns, factor_returns)
-        self.portfolio, self.factors = self._align_and_preprocess(portfolio_returns, factor_returns)
-        self._post_alignment_validation()
+  class Data:
+     def __init__(self, portfolio_returns, factor_returns):
+          self._validate_initial_inputs(portfolio_returns, factor_returns)
+          self.portfolio, self.factors = self._align_and_preprocess(portfolio_returns, factor_returns)
+          self._post_alignment_validation()
     # ...
 
 - **Performance Diagnostics:**  
@@ -37,15 +37,15 @@ class Data:
   The main file (`streamlit_app.py`) sets up a user interface where you can adjust portfolio allocations, choose analysis dates, and view interactive charts and metrics.
 
     ```python
-def main():
-    st.set_page_config(layout="wide", page_title="Portfolio Analytics Dashboard")
-    st.title("Portfolio Factor Analytics Dashboard")
+  def main():
+      st.set_page_config(layout="wide", page_title="Portfolio Analytics Dashboard")
+      st.title("Portfolio Factor Analytics Dashboard")
     
-    if "run_dashboard" not in st.session_state:
-        st.session_state.run_dashboard = False
+      if "run_dashboard" not in st.session_state:
+          st.session_state.run_dashboard = False
 
-    def reset_run_dashboard():
-        st.session_state.run_dashboard = False
+      def reset_run_dashboard():
+          st.session_state.run_dashboard = False
     # ...
 
 ## Code Structure
