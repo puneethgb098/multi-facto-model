@@ -9,10 +9,6 @@ import streamlit as st
 import plotly.express as px
 import datetime
 
-##############################################
-# Data Class: Fetch, Store, and Process Data #
-##############################################
-
 class Data:
     """
     Fetches financial data from Yahoo Finance, combines it,
@@ -44,15 +40,12 @@ class Data:
             raise ValueError("No data retrieved for the specified indices.")
         self.all_data = pd.concat(self.data_frames)
         self.all_data.reset_index(inplace=True)
-        # Flatten MultiIndex columns if present
         if isinstance(self.all_data.columns, pd.MultiIndex):
             self.all_data.columns = [' '.join(col).strip() for col in self.all_data.columns.values]
-        # Convert date columns to datetime
         if 'Date' in self.all_data.columns:
             self.all_data['Date'] = pd.to_datetime(self.all_data['Date'])
         elif 'date' in self.all_data.columns:
             self.all_data['date'] = pd.to_datetime(self.all_data['date'])
-        # Rename the Close column to a standard name if needed
         if 'Close' in self.all_data.columns and 'close_price' not in self.all_data.columns:
             self.all_data.rename(columns={'Close': 'close_price'}, inplace=True)
 
@@ -84,21 +77,14 @@ class Data:
     def fetch_and_process_data(self):
         self.df = pd.read_sql_query('SELECT * FROM equity_indices', self.conn)
         self.df['date'] = pd.to_datetime(self.df['date'])
-        # Aggregate by date and index name
         self.df = self.df.groupby(['date', 'index_name'], as_index=False).agg({'close_price': 'mean'})
-        # Compute daily returns for each index
         self.df['returns'] = self.df.groupby('index_name')['close_price'].pct_change()
         self.df.dropna(inplace=True)
-        # Pivot the DataFrame to have separate columns for each index's close and returns
         self.df_pivot = self.df.pivot(index='date', columns='index_name', values=['close_price', 'returns'])
         self.df_pivot.columns = ['_'.join(col).strip() for col in self.df_pivot.columns.values]
 
     def get_data(self):
         return self.df_pivot
-
-#########################################################
-# Factor Analysis Class: Rolling Regression, PCA, etc.  #
-#########################################################
 
 class FactorAnalysis:
     """
@@ -162,7 +148,6 @@ class FactorAnalysis:
             X = sm.add_constant(X)
             try:
                 model = sm.OLS(y, X).fit()
-                # Capture only significant factors (p-value < 0.05)
                 significant = model.pvalues[model.pvalues < 0.05].index.tolist()
                 significant = [var for var in significant if var != 'const']
                 results.append({
@@ -209,9 +194,7 @@ class FactorAnalysis:
                 continue
         return pd.DataFrame(pca_results).set_index('end_date')
 
-##########################################################
-# Diagnostics and Analysis Functions (Reusable Modules)  #
-##########################################################
+
 
 def compute_diagnostics(portfolio_returns, trading_days=252):
     ann_return = np.mean(portfolio_returns) * trading_days
@@ -234,25 +217,21 @@ def run_analysis(allocations, start_date_input, end_date_input):
     symbols = ['SPY', 'QQQ', 'IWM']
     factors = ['^GSPC', '^VIX', '^TNX', 'GC=F']
     
-    # Fetch portfolio data
     portfolio_data = Data(symbols, start_date, end_date, '1d', 'portfolio.db')
     port_df = portfolio_data.get_data()
     asset_return_cols = [f"returns_{symbol}" for symbol in symbols]
     asset_returns = port_df[asset_return_cols].copy()
     
-    # Calculate weighted portfolio returns based on allocations
     alloc_fractions = {k: allocations[k] / 100 for k in allocations}
     weighted_portfolio_returns = asset_returns.mul(
         [alloc_fractions[symbol] for symbol in symbols], axis=1
     ).sum(axis=1)
     
-    # Fetch factor data
     factor_data = Data(factors, start_date, end_date, '1d', 'factors.db')
     factor_df = factor_data.get_data()
     factor_return_cols = [col for col in factor_df.columns if col.startswith("returns_")]
     factor_returns = factor_df[factor_return_cols].copy()
     
-    # Perform factor analysis (for demonstration; results can be extended as needed)
     try:
         fa = FactorAnalysis(weighted_portfolio_returns, factor_returns)
         _ = fa.rolling_regression(window=60)
@@ -264,9 +243,6 @@ def run_analysis(allocations, start_date_input, end_date_input):
     diagnostics = compute_diagnostics(weighted_portfolio_returns)
     return weighted_portfolio_returns, diagnostics
 
-######################################
-# Helper Function to Export Plot Images
-######################################
 
 def export_plots(figures, folder="images"):
     if not os.path.exists(folder):
@@ -279,9 +255,6 @@ def export_plots(figures, folder="images"):
         except Exception as e:
             st.write(f"Failed to export {name}: {e}")
 
-#########################
-# Streamlit Dashboard   #
-#########################
 
 def main():
     st.set_page_config(layout="wide", page_title="Portfolio Analytics Dashboard")
@@ -343,9 +316,6 @@ def main():
     if st.session_state.run_dashboard:
         portfolio_returns, diagnostics = run_analysis(allocations, start_date_input, end_date_input)
         
-        # -----------------------------
-        # Performance Analysis Section
-        # -----------------------------
         cumulative_returns = (1 + portfolio_returns).cumprod()
         cum_returns_df = cumulative_returns.reset_index()
         cum_returns_df.columns = ['Date', 'Cumulative Return']
@@ -363,9 +333,6 @@ def main():
             st.metric("Sharpe Ratio", f"{diagnostics['Sharpe Ratio']:.2f}")
             st.metric("Max Drawdown", f"{diagnostics['Max Drawdown']*100:.2f}%")
         
-        # -------------------------------------
-        # Additional Analytics and Charts
-        # -------------------------------------
         st.header("Return Attribution Analysis")
         corr_matrix = pd.DataFrame({
             'S&P 500': [1.00, 0.92, 0.85, -0.65, -0.45],
@@ -410,9 +377,6 @@ def main():
         with col_d:
             st.plotly_chart(drawdown_fig, use_container_width=True, key="drawdown_chart", showlegend=False)
         
-        # -------------------------------------
-        # Investment Interpretation Section
-        # -------------------------------------
         with st.expander("Investment Interpretation: Tech-Growth Portfolio Example"):
             st.markdown("""
             **Portfolio Composition**  
@@ -440,9 +404,6 @@ def main():
             The analysis suggests that the mix of large-cap and small-cap exposure, combined with market and macroeconomic factors, drives the portfolio’s return profile. Adjusting the allocations allows investors to fine-tune their exposure and potentially improve the risk/return trade-off in light of current market conditions.
             """)
         
-        # -------------------------------------
-        # Export Plots Section
-        # -------------------------------------
         if st.button("Export Plots to Images"):
             figures = {
                 "cumulative_returns": fig,
